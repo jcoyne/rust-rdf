@@ -1,6 +1,6 @@
 [package]
 
-name = "rust-ldp-client"
+name = "rust-rdf"
 version = "0.0.1"
 authors = ["justin <justin@curationexperts.com>"]
 
