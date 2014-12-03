@@ -1,0 +1,8 @@
+[package]
+
+name = "rust-ldp-client"
+version = "0.0.1"
+authors = ["justin <justin@curationexperts.com>"]
+
+[dependencies.curl]
+git = "https://github.com/carllerche/curl-rust"
