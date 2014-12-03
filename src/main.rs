@@ -7,21 +7,28 @@ use std::str;
 
 
 fn main() {
-  let resp = http::handle()
-    .get("http://localhost:8983/fedora/rest")
-    .exec().unwrap();
 
-  let body_string = match str::from_utf8(resp.get_body()) {
-      Some(e) => e,
-      None => panic!("Invalid UTF-8 sequence"),
-  };
+  let turtle_file = download("http://localhost:8983/fedora/rest");
+  turtle::parse(turtle_file.as_slice());
 
-  turtle::parse(body_string);
-
-  println!("code={}; headers={}; body={}",
-     resp.get_code(), resp.get_headers(), body_string);
+  /*println!("code={}; headers={}; body={}",*/
+  /*   resp.get_code(), resp.get_headers(), body_string);*/
 }
 
+fn download(uri: &str) -> String {
+  let resp = http::handle()
+    .get(uri)
+    .exec().unwrap();
+
+  if resp.get_code() != 200 {
+    panic!("Server didn't give 200 response");
+  };
+
+  match str::from_utf8(resp.get_body()) {
+      Some(e) => e.to_string(),
+      None => panic!("Invalid UTF-8 sequence"),
+  }
+}
 
 mod rdf {
   pub struct URI(pub String);
