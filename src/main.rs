@@ -5,14 +5,21 @@ extern crate curl;
 use curl::http;
 use std::str;
 
+use std::io::File;
 
 fn main() {
-
-  let turtle_file = download("http://localhost:8983/fedora/rest");
+  //let turtle_file = download("http://localhost:8983/fedora/rest");
+  let turtle_file = from_file("sample.rdf.ttl");
   turtle::parse(turtle_file.as_slice());
+}
 
-  /*println!("code={}; headers={}; body={}",*/
-  /*   resp.get_code(), resp.get_headers(), body_string);*/
+fn from_file(path: &str) -> String {
+    let p = Path::new(path);
+
+    match File::open(&p).read_to_string() {
+        Ok(f) => f,
+        Err(e) => panic!("file error: {}", e),
+    }
 }
 
 fn download(uri: &str) -> String {
