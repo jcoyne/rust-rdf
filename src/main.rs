@@ -10,6 +10,7 @@ use std::io::File;
 fn main() {
   //let turtle_file = download("http://localhost:8983/fedora/rest");
   let turtle_file = from_file("sample.rdf.ttl");
+
   turtle::parse(turtle_file.as_slice());
 }
 
@@ -68,14 +69,24 @@ mod turtle {
 
   pub fn parse(raw: &str) -> rdf::Graph {
     let mut g = rdf::Graph::new();
-    let lines: Vec<&str> = raw.split('\n').collect();
+    let statements_re = regex!(r"\.\n+");
+    let statements: Vec<&str> = statements_re.split(raw).collect();
 
+    let prefix_re = regex!(r"\A@prefix (\S*): <([^>]*)>");
+    let triples_re = regex!(r"(?ms)\A<([^>]*)> (.*)");
 
-    for line in lines.iter() {
-      let matched = regex!(r"\A<[^>]+>").is_match(*line);
-      if matched {
-        println!("Found a line that has data:\n  {}", line);
-      }
+    for line in statements.iter() {
+        let prefix_result = prefix_re.captures(*line);
+        if prefix_result.is_some() {
+            let unwrapped = prefix_result.unwrap();
+            println!("Found a prefix:\n  {} -> {}", unwrapped.at(1), unwrapped.at(2));
+        } else {
+            let triples_result = triples_re.captures(*line);
+            if triples_result.is_some() {
+                let unwrapped = triples_result.unwrap();
+                println!("Found a mess of triples:\n  Subject: {} -> mess: {}", unwrapped.at(1), unwrapped.at(2));
+            }
+        }
     }
     rdf::URIorLiteral::URI(rdf::URI("http://baz".to_string()));
 
