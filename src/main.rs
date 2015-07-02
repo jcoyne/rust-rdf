@@ -39,33 +39,40 @@ fn download(uri: &str) -> String {
 }
 
 mod rdf {
-  pub struct URI(pub String);
+    #[deriving(Clone, Show)]
+    pub struct URI(pub String);
 
-  pub enum URIorLiteral {
-    URI(URI),
-    Literal(String)
-  }
+    pub enum URIorLiteral {
+        URI(URI),
+        Literal(String)
+    }
 
-  pub struct Statement {
-      pub subject: URI,
-      pub predicate: URI,
-      pub object: URIorLiteral,
-  }
+    pub struct Statement {
+        pub subject: URI,
+        pub predicate: URI,
+        pub object: URIorLiteral,
+    }
 
-  pub struct Graph {
-      pub statements: Vec<Statement>
-  }
+    pub struct Graph {
+        pub statements: Vec<Statement>
+    }
 
-  impl Graph {
-      pub fn new() -> Graph {
-          Graph { statements: vec![] }
-      }
-  }
+    impl Graph {
+        pub fn new() -> Graph {
+            Graph { statements: vec![] }
+        }
+    }
 }
 
 
 mod turtle {
+  // https://gist.github.com/danlentz/6564037#file-turtle-bnf-md
   use rdf;
+
+  struct PredicateObjectEntry {
+      predicate: rdf::URI,
+      object_list: String,
+  }
 
   pub fn parse(raw: &str) -> rdf::Graph {
     let mut g = rdf::Graph::new();
@@ -84,13 +91,41 @@ mod turtle {
             let triples_result = triples_re.captures(*line);
             if triples_result.is_some() {
                 let unwrapped = triples_result.unwrap();
-                println!("Found a mess of triples:\n  Subject: {} -> mess: {}", unwrapped.at(1), unwrapped.at(2));
+                let subject = unwrapped.at(1);
+                // TODO this is causing a panic
+                let predicate_object_tuples = parse_predicate_object_list(unwrapped.at(2));
+                for s in predicate_object_tuples.iter() {
+                    g.statements.push(
+                        // TODO put object list members as the object
+                        rdf::Statement { subject: rdf::URI(subject.to_string()), predicate: s.predicate.clone(), object: rdf::URIorLiteral::URI(rdf::URI("http://baz".to_string())) }
+                    )
+                }
             }
         }
     }
-    rdf::URIorLiteral::URI(rdf::URI("http://baz".to_string()));
 
-    g.statements = vec![rdf::Statement { subject: rdf::URI("http://foo".to_string()), predicate: rdf::URI("http://bar".to_string()), object: rdf::URIorLiteral::URI(rdf::URI("http://baz".to_string())) }];
+    for s in g.statements.iter() {
+        println!("Statement {} {} ", s.subject, s.predicate);
+    }
+
     return g;
+  }
+
+  fn parse_predicate_object_list(raw: &str) -> Vec<PredicateObjectEntry> {
+      //let mut split = raw.to_string().split(" ;");
+      let v: Vec<&str> = raw.split_str(" ;").collect();
+      let re = regex!(r"\A([^\s]*) (.*)$");
+
+      let mut pred_object_list: Vec<PredicateObjectEntry> = Vec::new();
+      for s in v.iter() {
+          let predicate_result = re.captures(*s);
+          if predicate_result.is_some() {
+              let unwrapped = predicate_result.unwrap();
+              // TODO split object_list by commas.
+              let entry = PredicateObjectEntry { predicate: rdf::URI(unwrapped.at(1).to_string()), object_list: unwrapped.at(2).to_string() };
+              pred_object_list.push(entry);
+          }
+      }
+      return pred_object_list;
   }
 }
